@@ -2,19 +2,22 @@ import client.Courier;
 import client.Credentials;
 import client.ScooterServicesClient;
 import io.qameta.allure.Step;
-import io.restassured.response.ValidatableResponse;
+import io.restassured.response.Response;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CourierLoginTest {
     private ScooterServicesClient client = new ScooterServicesClient();
     private Courier courier;
 
     @Before
-    public void before(){
+    public void before() {
         courier = new Courier("Testovvv", "1234", "Testov");
         client.createCourier(courier);
     }
@@ -22,6 +25,7 @@ public class CourierLoginTest {
     @After
     public void dataCleaning() {
         Integer idCourier = client.loginCourier(Credentials.fromCourier(courier))
+                .then()
                 .extract()
                 .path("id");
         if (idCourier != null) {
@@ -31,39 +35,37 @@ public class CourierLoginTest {
 
     @Test
     @Step("Авторизация курьера")
-    public void courierLoginSuccess(){
-        ValidatableResponse response = client.loginCourier(Credentials.fromCourier(courier));
-response.assertThat().statusCode(200);
-        String courierId = response.extract().jsonPath().getString("id");
-
+    public void courierLoginSuccess() {
+        Response response = client.loginCourier(Credentials.fromCourier(courier));
+        response.then().assertThat().statusCode(HttpStatus.SC_OK);
+        String courierId = response.then().extract().jsonPath().getString("id");
+        assertThat(courierId, is(notNullValue()));
     }
+
     @Test
     @Step("Авторизация с несуществующим логином и паролем")
     public void courierLoginWithInvalidCredentials() {
         Credentials invalidCredentials = new Credentials("qwertyuiopl", "789654126");
-        ValidatableResponse response = client.loginCourier(invalidCredentials);
-        response.log().all();
-        response.assertThat().statusCode(404);
-        response.assertThat().body("message", is("Учетная запись не найдена"));
+        Response response = client.loginCourier(invalidCredentials);
+        response.then().assertThat().statusCode(HttpStatus.SC_NOT_FOUND);
+        response.then().assertThat().body("message", is("Учетная запись не найдена"));
     }
 
     @Test
     @Step("Авторизация с отсутствующим логином")
     public void courierLoginWithMissingLogin() {
         Credentials credentialsWithoutLogin = new Credentials("", "12344");
-        ValidatableResponse response = client.loginCourier(credentialsWithoutLogin);
-        response.log().all();
-        response.assertThat().statusCode(400);
-        response.assertThat().body("message", is("Недостаточно данных для входа"));
+        Response response = client.loginCourier(credentialsWithoutLogin);
+        response.then().assertThat().statusCode(HttpStatus.SC_BAD_REQUEST);
+        response.then().assertThat().body("message", is("Недостаточно данных для входа"));
     }
+
     @Test
     @Step("Авторизация с отсутствующим паролем")
     public void courierLoginWithMissingPassword() {
-        Credentials credentialsWithoutLogin = new Credentials("Testovvv", "");
-        ValidatableResponse response = client.loginCourier(credentialsWithoutLogin);
-        response.log().all();
-        response.assertThat().statusCode(400);
-        response.assertThat().body("message", is("Недостаточно данных для входа"));
+        Credentials credentialsWithoutPassword = new Credentials("Testovvv", "");
+        Response response = client.loginCourier(credentialsWithoutPassword);
+        response.then().assertThat().statusCode(HttpStatus.SC_BAD_REQUEST);
+        response.then().assertThat().body("message", is("Недостаточно данных для входа"));
     }
-
 }

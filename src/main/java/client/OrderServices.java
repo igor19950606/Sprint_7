@@ -1,9 +1,8 @@
 package client;
 
-import io.restassured.response.ValidatableResponse;
+import io.restassured.response.Response;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class OrderServices {
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
@@ -11,26 +10,20 @@ public class OrderServices {
     private static final String GET_ORDER_BY_TRACK = "/api/v1/orders/track";
 
 
-    // Создание заказа
-    public ValidatableResponse createOrder(Order order) {
+    public Response createOrder(Order order) {
         return given()
                 .header("Content-type", "application/json")
                 .baseUri(BASE_URL)
                 .body(order)
-                .post(POST_CREATE)
-                .then()
-                .statusCode(201)
-                .body("track", notNullValue())
-                .log().all();
+                .post(POST_CREATE);
     }
-    public ValidatableResponse getOrderByTrack(String trackNumber) {
+
+    public Response getOrderByTrack(String trackNumber) {
         return given()
                 .header("Content-type", "application/json")
                 .baseUri(BASE_URL)
                 .param("t", trackNumber)
-                .get(GET_ORDER_BY_TRACK)
-                .then()
-                .log().all();
+                .get(GET_ORDER_BY_TRACK);
     }
 }
 

@@ -2,7 +2,8 @@ import client.Courier;
 import client.Credentials;
 import client.ScooterServicesClient;
 import io.qameta.allure.Step;
-import io.restassured.response.ValidatableResponse;
+import io.restassured.response.Response;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Test;
 
@@ -17,6 +18,7 @@ public class CourierCreateTest {
     public void dataCleaning() {
         if (courier != null) {
             Integer idCourier = client.loginCourier(Credentials.fromCourier(courier))
+                    .then()
                     .extract()
                     .path("id");
             if (idCourier != null) {
@@ -29,19 +31,21 @@ public class CourierCreateTest {
     @Step("Создание курьера с заполнением всех полей")
     public void courierCreate() {
         courier = new Courier("Ivitro", "12324", "Ivitro12");
-        ValidatableResponse response = client.createCourier(courier);
-        response.assertThat()
-                .statusCode(201)
+        Response response = client.createCourier(courier);
+        response.then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CREATED)
                 .body("ok", is(true));
     }
 
     @Test
-    @Step("Создание курьера с заполнием обязательных полей")
+    @Step("Создание курьера с заполнением обязательных полей")
     public void courierCreateRequired() {
         courier = new Courier("Ivitro", "1234", null);
-        ValidatableResponse response = client.createCourier(courier);
-        response.assertThat()
-                .statusCode(201)
+        Response response = client.createCourier(courier);
+        response.then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CREATED)
                 .body("ok", is(true));
     }
 
@@ -49,9 +53,10 @@ public class CourierCreateTest {
     @Step("Создание курьера с одинаковыми данными")
     public void courierCreateDouble() {
         Courier courier = new Courier("ninja", "1234", "saske");
-        ValidatableResponse response = client.createCourier(courier);
-        response.assertThat()
-                .statusCode(409)
+        Response response = client.createCourier(courier);
+        response.then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CONFLICT)
                 .body("message", is("Этот логин уже используется. Попробуйте другой."));
     }
 
@@ -59,9 +64,10 @@ public class CourierCreateTest {
     @Step("Создание курьера с не заполненным логином")
     public void courierCreateNullLogin() {
         courier = new Courier("", "12324", "Ivitro12");
-        ValidatableResponse response = client.createCourier(courier);
-        response.assertThat()
-                .statusCode(400)
+        Response response = client.createCourier(courier);
+        response.then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body("message", is("Недостаточно данных для создания учетной записи"));
     }
 
@@ -69,19 +75,21 @@ public class CourierCreateTest {
     @Step("Создание курьера с не заполненным паролем")
     public void courierCreateNullPassword() {
         courier = new Courier("Ivitro", "", "Ivitro12");
-        ValidatableResponse response = client.createCourier(courier);
-        response.assertThat()
-                .statusCode(400)
+        Response response = client.createCourier(courier);
+        response.then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body("message", is("Недостаточно данных для создания учетной записи"));
     }
 
     @Test
-    @Step("Создание курьера с логином который уже есть")
+    @Step("Создание курьера с логином, который уже есть")
     public void courierCreateLogonDouble() {
         courier = new Courier("ninja", "1234", "Ivitro12");
-        ValidatableResponse response = client.createCourier(courier);
-        response.assertThat()
-                .statusCode(409)
+        Response response = client.createCourier(courier);
+        response.then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CONFLICT)
                 .body("message", is("Этот логин уже используется. Попробуйте другой."));
     }
 }
